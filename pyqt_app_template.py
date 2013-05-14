@@ -18,7 +18,7 @@
 
 
 # metadata
-' App Template '
+'App_Template'
 __version__ = ' 0.1 '
 __license__ = ' GPL '
 __author__ = ' juancarlospaco '
@@ -47,7 +47,6 @@ except ImportError:
     from urllib2 import urlopen  # lint:ok
 
 try:
-    from PyQt4.QtGui import QIcon
     from PyQt4.QtGui import QLabel
     from PyQt4.QtGui import QFileDialog
     from PyQt4.QtGui import QWidget
@@ -57,13 +56,10 @@ try:
     from PyQt4.QtGui import QCursor
     from PyQt4.QtGui import QLineEdit
     from PyQt4.QtGui import QCheckBox
-    from PyQt4.QtGui import QPushButton
     from PyQt4.QtGui import QGroupBox
     from PyQt4.QtGui import QMessageBox
-    from PyQt4.QtGui import QApplication
     from PyQt4.QtGui import QCompleter
     from PyQt4.QtGui import QDirModel
-    from PyQt4.QtGui import QMainWindow
     from PyQt4.QtGui import QFont
     from PyQt4.QtGui import QTabWidget
     from PyQt4.QtGui import QDockWidget
@@ -79,8 +75,9 @@ try:
     from PyQt4.QtGui import QDesktopWidget
     from PyQt4.QtGui import QColorDialog
     from PyQt4.QtGui import QDialog
-    from PyQt4.QtGui import QCalendarWidget
     from PyQt4.QtGui import QLCDNumber
+    from PyQt4.QtGui import QIcon
+    from PyQt4.QtGui import QPushButton
 
     from PyQt4.QtCore import Qt
     from PyQt4.QtCore import QDir
@@ -95,8 +92,28 @@ except ImportError:
 
 try:
     from PyKDE4.kdeui import KTextEdit as QPlainTextEdit
+    from PyKDE4.kdeui import KColorDialog
+    from PyKDE4.kdeui import KDatePicker as QCalendarWidget
+    from PyKDE4.kdeui import KFontDialog
+    from PyKDE4.kdeui import KApplication as QApplication
+    from PyKDE4.kdeui import KMainWindow as QMainWindow
+    from PyKDE4.kdecore import KCmdLineArgs
+    from PyKDE4.kdecore import KAboutData
+    from PyKDE4.kdecore import ki18n
+    from PyKDE4.kdeui import KHelpMenu
+    from PyKDE4.kdeui import KAboutApplicationDialog
+    aboutData = KAboutData(__doc__, "", ki18n(__doc__), __version__,
+        ki18n(__doc__), KAboutData.License_GPL, ki18n(__author__),
+        ki18n(" This Smart App uses KDE if present, else Qt only if present "),
+        __url__, __email__)
+    KDE = True
 except ImportError:
     from PyQt4.QtGui import QPlainTextEdit  # lint:ok
+    from PyQt4.QtGui import QCalendarWidget  # lint:ok
+    from PyQt4.QtGui import QFontDialog
+    from PyQt4.QtGui import QMainWindow  # lint:ok
+    from PyQt4.QtGui import QApplication  # lint:ok
+    KDE = False
 
 
 # constants
@@ -206,11 +223,28 @@ class MyMainWindow(QMainWindow):
         qamax.triggered.connect(lambda: self.showMaximized())
         qaqt = QAction(QIcon.fromTheme("help-about"), 'About Qt', self)
         qaqt.triggered.connect(lambda: QMessageBox.aboutQt(self))
+        qakde = QAction(QIcon.fromTheme("help-about"), 'About KDE', self)
+        if KDE:
+            qakde.triggered.connect(KHelpMenu(self, "", False).aboutKDE)
         qaslf = QAction(QIcon.fromTheme("help-about"), 'About Self', self)
-        qaslf.triggered.connect(lambda: QMessageBox.about(self.mainwidget,
+        if KDE:
+            qaslf.triggered.connect(
+                                KAboutApplicationDialog(aboutData, self).exec_)
+        else:
+            qaslf.triggered.connect(lambda: QMessageBox.about(self.mainwidget,
             __doc__, ''.join((__doc__, linesep, 'version ', __version__, ', (',
             __license__, '), by ', __author__, ', ( ', __email__, ' )', linesep
-        ))))
+            ))))
+        qafnt = QAction(QIcon.fromTheme("help-about"), 'Set GUI Font', self)
+        if KDE:
+            font = QFont()
+            qafnt.triggered.connect(lambda:
+                self.setStyleSheet('*{font-family: %s}' % font.toString())
+                if KFontDialog.getFont(font)[0] == QDialog.Accepted else '')
+        else:
+            qafnt.triggered.connect(lambda:
+                self.setStyleSheet('*{font-family: %s}' %
+                                   QFontDialog.getFont()[0].toString()))
         qasrc = QAction(QIcon.fromTheme("applications-development"),
                         'View Source Code', self)
         qasrc.triggered.connect(lambda: call('xdg-open ' + __file__, shell=1))
@@ -245,7 +279,13 @@ class MyMainWindow(QMainWindow):
         qali.triggered.connect(lambda: open_new_tab(__full_licence__))
         qacol = QAction(QIcon.fromTheme("preferences-system"), 'Set GUI Colors',
                         self)
-        qacol.triggered.connect(lambda: self.setStyleSheet(''' * {
+        if KDE:
+            color = QColor()
+            qacol.triggered.connect(lambda:
+                self.setStyleSheet('''*{background-color:%s}''' % color.name())
+                if KColorDialog.getColor(color, self) else '')
+        else:
+            qacol.triggered.connect(lambda: self.setStyleSheet(''' * {
                 background-color: %s } ''' % QColorDialog.getColor().name()))
         qatit = QAction(QIcon.fromTheme("preferences-system"),
                         'Set the App Window Title', self)
@@ -253,7 +293,8 @@ class MyMainWindow(QMainWindow):
         self.toolbar.addWidget(self.left_spacer)
         self.toolbar.addSeparator()
         for b in (qaqq, qamin, qanor, qamax, qasrc, qakb, qacol, qatim, qatb,
-            qati, qasb, qatit, qapic, qadoc, qali, qaslf, qaqt, qapy, qabug):
+            qafnt, qati, qasb, qatit, qapic, qadoc, qali, qaslf, qaqt, qakde,
+            qapy, qabug):
             self.toolbar.addAction(b)
         self.addToolBar(Qt.TopToolBarArea, self.toolbar)
         self.toolbar.addSeparator()
@@ -263,8 +304,8 @@ class MyMainWindow(QMainWindow):
             ' quick and dirty custom context menu '
             menu = QMenu()
             menu.addActions((qaqq, qamin, qanor, qamax, qasrc, qakb, qacol,
-                qati, qasb, qatb, qatim, qatit, qapic, qadoc, qali, qaslf, qaqt,
-                qapy, qabug))
+                qafnt, qati, qasb, qatb, qatim, qatit, qapic, qadoc, qali,
+                qaslf, qaqt, qakde, qapy, qabug))
             menu.exec_(self.mapToGlobal(point))
         self.mainwidget.customContextMenuRequested.connect(contextMenuRequested)
 
@@ -377,7 +418,10 @@ class MyMainWindow(QMainWindow):
         # Set painter Font for text
         p.setFont(QFont('Ubuntu', 200))
         # draw the background text, with antialiasing
-        p.drawText(99, 99, "PyQt")
+        if KDE:
+            p.drawText(99, 99, "PyKDE")
+        else:
+            p.drawText(99, 99, "PyQt")
         # Rotate -45 the QPen back !
         p.rotate(-30)
         # set the pen to no pen
@@ -469,7 +513,15 @@ def main():
         elif o in ('-b', '--border'):
                 BORDER = False
     # define our App
-    app = QApplication(sys.argv)
+    try:
+        app = QApplication(sys.argv)
+    except TypeError:
+        aboutData = KAboutData(__doc__, '', ki18n(__doc__), __version__,
+            ki18n(__doc__), KAboutData.License_GPL, ki18n(__author__),
+            ki18n("none"), __url__, __email__)
+        KCmdLineArgs.init(sys.argv, aboutData)
+        app = QApplication()
+        app.lastWindowClosed.connect(app.quit)
     # w is gonna be the mymainwindow class
     w = MyMainWindow()
     # set the class with the attribute of translucent background as true
