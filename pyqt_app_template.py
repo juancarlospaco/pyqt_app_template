@@ -33,10 +33,8 @@ __full_licence__ = 'http://opensource.org/licenses/gpl-3.0.html'
 
 # imports
 import sys
-from os import path
-from os import linesep
-from os import geteuid
-from os import environ
+from os import (path, linesep, sep, geteuid, environ, mkdir, getcwd, chdir)
+
 from datetime import datetime
 from subprocess import call
 from random import randint
@@ -47,72 +45,37 @@ except ImportError:
     from urllib2 import urlopen  # lint:ok
 
 try:
-    from PyQt4.QtGui import QLabel
-    from PyQt4.QtGui import QFileDialog
-    from PyQt4.QtGui import QWidget
-    from PyQt4.QtGui import QVBoxLayout
-    from PyQt4.QtGui import QHBoxLayout
-    from PyQt4.QtGui import QComboBox
-    from PyQt4.QtGui import QCursor
-    from PyQt4.QtGui import QLineEdit
-    from PyQt4.QtGui import QCheckBox
-    from PyQt4.QtGui import QGroupBox
-    from PyQt4.QtGui import QMessageBox
-    from PyQt4.QtGui import QCompleter
-    from PyQt4.QtGui import QDirModel
-    from PyQt4.QtGui import QFont
-    from PyQt4.QtGui import QTabWidget
-    from PyQt4.QtGui import QDockWidget
-    from PyQt4.QtGui import QToolBar
-    from PyQt4.QtGui import QSizePolicy
-    from PyQt4.QtGui import QAction
-    from PyQt4.QtGui import QPalette
-    from PyQt4.QtGui import QPen
-    from PyQt4.QtGui import QPainter
-    from PyQt4.QtGui import QColor
-    from PyQt4.QtGui import QPixmap
-    from PyQt4.QtGui import QMenu
-    from PyQt4.QtGui import QDesktopWidget
-    from PyQt4.QtGui import QColorDialog
-    from PyQt4.QtGui import QDialog
-    from PyQt4.QtGui import QLCDNumber
-    from PyQt4.QtGui import QIcon
-    from PyQt4.QtGui import QPushButton
+    from PyQt4.QtGui import (QIcon, QLabel, QFileDialog, QWidget, QVBoxLayout,
+        QHBoxLayout, QComboBox, QCursor, QLineEdit, QCheckBox, QPushButton,
+        QGroupBox, QMessageBox, QCompleter, QDirModel, QLCDNumber, QAction,
+        QFont, QTabWidget, QDockWidget, QToolBar, QSizePolicy, QColorDialog,
+        QPalette, QPen, QPainter, QColor, QPixmap, QMenu, QDialog, QScrollArea,
+        QDesktopWidget, QProgressBar, QDialogButtonBox)
 
-    from PyQt4.QtCore import Qt
-    from PyQt4.QtCore import QDir
-    from PyQt4.QtCore import QSize
-    from PyQt4.QtCore import QUrl
-    from PyQt4.QtCore import QTimer
+    from PyQt4.QtCore import (Qt, QDir, QSize, QUrl, QTimer, QFileInfo, QFile,
+        QIODevice, QProcess)
 
-    from PyQt4.QtNetwork import QNetworkProxy
+    from PyQt4.QtNetwork import (QNetworkProxy, QHttp)
 except ImportError:
     print(" ERROR: No Qt4 avaliable!\n (sudo apt-get install python-qt4)")
     exit()
 
 try:
+    from PyKDE4.kdeui import (KAboutApplicationDialog, KColorDialog, KHelpMenu,
+                              KFontDialog)
     from PyKDE4.kdeui import KTextEdit as QPlainTextEdit
-    from PyKDE4.kdeui import KColorDialog
     from PyKDE4.kdeui import KDatePicker as QCalendarWidget
-    from PyKDE4.kdeui import KFontDialog
     from PyKDE4.kdeui import KApplication as QApplication
     from PyKDE4.kdeui import KMainWindow as QMainWindow
-    from PyKDE4.kdecore import KCmdLineArgs
-    from PyKDE4.kdecore import KAboutData
-    from PyKDE4.kdecore import ki18n
-    from PyKDE4.kdeui import KHelpMenu
-    from PyKDE4.kdeui import KAboutApplicationDialog
+    from PyKDE4.kdecore import (KCmdLineArgs, KAboutData, ki18n)
     aboutData = KAboutData(__doc__, "", ki18n(__doc__), __version__,
         ki18n(__doc__), KAboutData.License_GPL, ki18n(__author__),
         ki18n(" This Smart App uses KDE if present, else Qt only if present "),
         __url__, __email__)
     KDE = True
 except ImportError:
-    from PyQt4.QtGui import QPlainTextEdit  # lint:ok
-    from PyQt4.QtGui import QCalendarWidget  # lint:ok
-    from PyQt4.QtGui import QFontDialog
-    from PyQt4.QtGui import QMainWindow  # lint:ok
-    from PyQt4.QtGui import QApplication  # lint:ok
+    from PyQt4.QtGui import (QPlainTextEdit, QCalendarWidget,  # lint:ok
+                            QFontDialog, QMainWindow, QApplication)  # lint:ok
     KDE = False
 
 
