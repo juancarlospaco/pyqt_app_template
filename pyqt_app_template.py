@@ -44,6 +44,7 @@ try:
 except ImportError:
     from urllib2 import urlopen  # lint:ok
 
+from sip import setapi
 try:
     from PyQt4.QtGui import (QIcon, QLabel, QFileDialog, QWidget, QVBoxLayout,
         QHBoxLayout, QComboBox, QCursor, QLineEdit, QCheckBox, QPushButton,
@@ -57,7 +58,7 @@ try:
 
     from PyQt4.QtNetwork import (QNetworkProxy, QHttp)
 except ImportError:
-    print(" ERROR: No Qt4 avaliable!\n (sudo apt-get install python-qt4)")
+    print(" ERROR: No Qt4 avaliable! \n ( sudo apt-get install python-qt4 ) ")
     exit()
 
 try:
@@ -77,6 +78,11 @@ except ImportError:
     from PyQt4.QtGui import (QPlainTextEdit, QCalendarWidget,  # lint:ok
                             QFontDialog, QMainWindow, QApplication)  # lint:ok
     KDE = False
+
+
+# API 2
+(setapi(a, 2) for a in ("QDate", "QDateTime", "QString", "QTime", "QUrl",
+                        "QTextStream", "QVariant"))
 
 
 # constants
@@ -102,7 +108,7 @@ class MyMainWindow(QMainWindow):
         ' Initialize QWidget inside MyMainWindow '
         super(MyMainWindow, self).__init__(parent)
         QWidget.__init__(self)
-        self.statusBar().showMessage('               ' + __doc__)
+        self.statusBar().showMessage('               {}'.format(__doc__))
         self.setStyleSheet('QStatusBar{color:grey;}')
         self.setWindowTitle(__doc__)
         self.setWindowIcon(QIcon.fromTheme("face-monkey"))
@@ -202,15 +208,16 @@ class MyMainWindow(QMainWindow):
         if KDE:
             font = QFont()
             qafnt.triggered.connect(lambda:
-                self.setStyleSheet('*{font-family: %s}' % font.toString())
-                if KFontDialog.getFont(font)[0] == QDialog.Accepted else '')
+            self.setStyleSheet(''.join((
+                '*{font-family:', str(font.toString()), '}'))
+                if KFontDialog.getFont(font)[0] == QDialog.Accepted else ''))
         else:
             qafnt.triggered.connect(lambda:
-                self.setStyleSheet('*{font-family: %s}' %
-                                   QFontDialog.getFont()[0].toString()))
+                self.setStyleSheet(''.join(('*{font-family:',
+                            str(QFontDialog.getFont()[0].toString()), '}'))))
         qasrc = QAction(QIcon.fromTheme("applications-development"),
                         'View Source Code', self)
-        qasrc.triggered.connect(lambda: call('xdg-open ' + __file__, shell=1))
+        qasrc.triggered.connect(lambda: call('xdg-open {}'.format(__file__), 1))
         qakb = QAction(QIcon.fromTheme("input-keyboard"),
                        'Keyboard Shortcuts', self)
         qakb.triggered.connect(lambda: QMessageBox.information(self.mainwidget,
@@ -245,11 +252,13 @@ class MyMainWindow(QMainWindow):
         if KDE:
             color = QColor()
             qacol.triggered.connect(lambda:
-                self.setStyleSheet('''*{background-color:%s}''' % color.name())
+                self.setStyleSheet(''.join(('* { background-color: ',
+                                            str(color.name()), '}')))
                 if KColorDialog.getColor(color, self) else '')
         else:
-            qacol.triggered.connect(lambda: self.setStyleSheet(''' * {
-                background-color: %s } ''' % QColorDialog.getColor().name()))
+            qacol.triggered.connect(lambda: self.setStyleSheet(''.join((
+                ' * { background-color: ', str(QColorDialog.getColor().name()),
+                ' } '))))
         qatit = QAction(QIcon.fromTheme("preferences-system"),
                         'Set the App Window Title', self)
         qatit.triggered.connect(self.seTitle)
@@ -354,7 +363,7 @@ class MyMainWindow(QMainWindow):
 
     def run(self):
         ' run forest run '
-        print((' INFO: Working at ' + str(datetime.datetime.now())))
+        print((' INFO: Working at {}'.format(str(datetime.datetime.now()))))
 
     ###########################################################################
 
