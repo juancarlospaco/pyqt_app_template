@@ -68,7 +68,8 @@ try:
     from PyKDE4.kdeui import KDatePicker as QCalendarWidget
     from PyKDE4.kdeui import KApplication as QApplication
     from PyKDE4.kdeui import KMainWindow as QMainWindow
-    from PyKDE4.kdecore import (KCmdLineArgs, KAboutData, ki18n)
+    from PyKDE4.nepomuk import Nepomuk
+    from PyKDE4.kdecore import (KCmdLineArgs, KAboutData, ki18n, KUrl)
     aboutData = KAboutData(__doc__, "", ki18n(__doc__), __version__,
         ki18n(__doc__), KAboutData.License_GPL, ki18n(__author__),
         ki18n(" This Smart App uses KDE if present, else Qt only if present "),
@@ -451,6 +452,45 @@ class MyMainWindow(QMainWindow):
         qr.moveCenter(QDesktopWidget().availableGeometry().center())
         self.move(qr.topLeft())
 
+    def nepomuk_set(self, file_tag=None, __tag='', _label='', _description=''):
+        ' Quick and Easy Nepomuk Taggify for Files '
+        if Nepomuk.ResourceManager.instance().init() is 0:
+            fle = Nepomuk.Resource(KUrl(QFileInfo(file_tag).absoluteFilePath()))
+            _tag = Nepomuk.Tag(__tag)
+            _tag.setLabel(_label)
+            fle.addTag(_tag)
+            fle.setDescription(_description)
+            print(([str(a.label()) for a in fle.tags()], fle.description()))
+            return ([str(a.label()) for a in fle.tags()], fle.description())
+        else:
+            print(" ERROR: FAIL: Nepomuk is not running ! ")
+            return
+
+    def nepomuk_get(self, query_to_search):
+        ' Quick and Easy Nepomuk Query for Files '
+        results = []
+        nepo = Nepomuk.Query.QueryServiceClient()
+        nepo.desktopQuery("hasTag:{}".format(query_to_search))
+
+        def _query(data):
+            ''' ('filename.ext', 'file description', ['list', 'of', 'tags']) '''
+            results.append(([str(a.resource().genericLabel()) for a in data][0],
+                            [str(a.resource().description()) for a in data][0],
+            [str(a.label()) for a in iter([a.resource().tags() for a in data][0]
+            )]))
+        nepo.newEntries.connect(_query)
+
+        def _end():
+            '''
+            [  ('filename.ext', 'file description', ['list', 'of', 'tags']),
+               ('filename.ext', 'file description', ['list', 'of', 'tags']),
+               ('filename.ext', 'file description', ['list', 'of', 'tags'])  ]
+            '''
+            nepo.newEntries.disconnect
+            print(results)
+            return results
+        nepo.finishedListing.connect(_end)
+
 
 ###############################################################################
 
@@ -487,6 +527,9 @@ def main():
     # define our App
     try:
         app = QApplication(sys.argv)
+        app.setOrganizationName(__author__)
+        app.setOrganizationDomain(__author__)
+        app.setApplicationName(__doc__)
     except TypeError:
         aboutData = KAboutData(__doc__, '', ki18n(__doc__), __version__,
             ki18n(__doc__), KAboutData.License_GPL, ki18n(__author__),
