@@ -61,7 +61,8 @@ try:
         QFont, QTabWidget, QDockWidget, QToolBar, QSizePolicy, QColorDialog,
         QPalette, QPen, QPainter, QColor, QPixmap, QMenu, QDialog, QScrollArea,
         QDesktopWidget, QProgressBar, QDialogButtonBox, QDial, QTabBar,
-        QTreeWidget, QTreeWidgetItem, QColumnView, QGraphicsDropShadowEffect)
+        QTreeWidget, QTreeWidgetItem, QColumnView, QGraphicsDropShadowEffect,
+        QSystemTrayIcon)
 
     from PyQt4.QtCore import (Qt, QDir, QSize, QUrl, QTimer, QFileInfo, QFile,
         QIODevice, QProcess, QEvent)
@@ -338,6 +339,24 @@ class MyMainWindow(QMainWindow):
         self.addToolBar(Qt.TopToolBarArea, self.toolbar)
         self.toolbar.addSeparator()
         self.toolbar.addWidget(self.right_spacer)
+        # define the menu
+        menu = self.menuBar()
+        # File menu items
+        menu.addMenu('&File').addActions((qaqq, ))
+        menu.addMenu('&Window').addActions((qamax, qanor, qamin))
+        # Settings menu
+        menu.addMenu('&Settings').addActions((qasrc, qacol, qafnt, qatim,
+                                              qatb, qati, qasb, qapic))
+        # Help menu items
+        menu.addMenu('&Help').addActions((qadoc, qakb, qabug, qali,
+                                          qaqt, qakde, qapy, qaslf))
+        # Tray Icon
+        tray = QSystemTrayIcon(QIcon.fromTheme("face-devilish"), self)
+        tray.setToolTip(__doc__)
+        traymenu = QMenu()
+        traymenu.addActions((qamax, qanor, qamin, qaqq))
+        tray.setContextMenu(traymenu)
+        tray.show()
 
         def contextMenuRequested(point):
             ' quick and dirty custom context menu '
@@ -609,7 +628,7 @@ def main():
                   -h, --help        Show help informations and exit.
                   -v, --version     Show version information and exit.
                   -o, --opaque      Use Opaque GUI.
-                  -b, --border      Use WM Borders.
+                  -b, --borderless  No WM Borders.
                   Run without parameters and arguments to use the GUI.
             ''')
             return sys.exit(1)
@@ -641,7 +660,7 @@ def main():
     if OPAQUE is True:
         w.setAttribute(Qt.WA_TranslucentBackground, True)
     # WM Borders
-    if BORDER is True:
+    if BORDER is False:
         w.setWindowFlags(w.windowFlags() | Qt.FramelessWindowHint)
     # run the class
     w.show()
@@ -652,4 +671,3 @@ def main():
 if __name__ == '__main__':
     ' Do NOT add anything here!, use main() function instead. '
     main()
-    
