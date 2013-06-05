@@ -615,7 +615,7 @@ def main():
     BORDER = True
     try:
         opts, args = getopt(sys.argv[1:], 'hvob',
-                                   ['version', 'help', 'opaque', 'border'])
+                                   ['version', 'help', 'opaque', 'borderless'])
         pass
     except:
         pass
@@ -635,7 +635,7 @@ def main():
             return sys.exit(1)
         elif o in ('-o', '--opaque'):
                 OPAQUE = False
-        elif o in ('-b', '--border'):
+        elif o in ('-b', '--borderless'):
                 BORDER = False
     # define our App
     try:
