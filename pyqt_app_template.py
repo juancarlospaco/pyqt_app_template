@@ -199,9 +199,6 @@ class MyMainWindow(QMainWindow):
         # basic widgets layouts and set up
         self.mainwidget = QTabWidget()
         self.mainwidget.setToolTip(__doc__)
-        self.mainwidget.setMovable(True)
-        self.mainwidget.setTabShape(QTabWidget.Triangular)
-        self.mainwidget.setTabsClosable(True)
         self.mainwidget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.mainwidget.tabCloseRequested.connect(lambda:
             self.mainwidget.setTabPosition(randint(0, 3)))
@@ -209,6 +206,9 @@ class MyMainWindow(QMainWindow):
             # else self.mainwidget.setTabPosition(0))
         self.mainwidget.setStyleSheet('QTabBar{color:white;font-weight:bold;}')
         self.mainwidget.setTabBar(TabBar(self))
+        self.mainwidget.setMovable(True)
+        self.mainwidget.setTabsClosable(True)
+        self.mainwidget.setTabShape(QTabWidget.Triangular)
         self.setCentralWidget(self.mainwidget)
         self.dock1 = QDockWidget()
         self.dock2 = QDockWidget()
@@ -219,8 +219,6 @@ class MyMainWindow(QMainWindow):
             a.setWindowTitle(__doc__
                              if a.windowTitle() == '' else a.windowTitle())
             a.setStyleSheet(' QDockWidget::title{text-align:center;}')
-            a.setFeatures(QDockWidget.DockWidgetFloatable |
-                          QDockWidget.DockWidgetMovable)
             self.mainwidget.addTab(a, QIcon.fromTheme("face-smile"),
                                    'Double Click Me')
 
