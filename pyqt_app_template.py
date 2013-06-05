@@ -31,14 +31,23 @@ __source__ = ''
 __full_licence__ = 'http://opensource.org/licenses/gpl-3.0.html'
 
 
+# snakes fight
+try:  # py2
+    str, range, input = unicode, xrange, raw_input  # lint:ok
+except NameError:  # py3
+    buffer, long = memoryview, int  # lint:ok
+
+
 # imports
 import sys
 from os import (path, linesep, sep, geteuid, environ, mkdir, getcwd, chdir)
-
 from datetime import datetime
 from subprocess import call
 from random import randint
 from webbrowser import open_new_tab
+from shutil import make_archive
+from subprocess import check_output as getoutput
+from getpass import getuser
 try:
     from urllib.request import urlopen  # py3
 except ImportError:
@@ -51,12 +60,14 @@ try:
         QGroupBox, QMessageBox, QCompleter, QDirModel, QLCDNumber, QAction,
         QFont, QTabWidget, QDockWidget, QToolBar, QSizePolicy, QColorDialog,
         QPalette, QPen, QPainter, QColor, QPixmap, QMenu, QDialog, QScrollArea,
-        QDesktopWidget, QProgressBar, QDialogButtonBox)
+        QDesktopWidget, QProgressBar, QDialogButtonBox, QDial, QTabBar,
+        QTreeWidget, QTreeWidgetItem, QColumnView, QGraphicsDropShadowEffect)
 
     from PyQt4.QtCore import (Qt, QDir, QSize, QUrl, QTimer, QFileInfo, QFile,
-        QIODevice, QProcess)
+        QIODevice, QProcess, QEvent)
 
     from PyQt4.QtNetwork import (QNetworkProxy, QHttp)
+    from PyQt4.phonon import Phonon
 except ImportError:
     print(" ERROR: No Qt4 avaliable! \n ( sudo apt-get install python-qt4 ) ")
     exit()
@@ -68,6 +79,7 @@ try:
     from PyKDE4.kdeui import KDatePicker as QCalendarWidget
     from PyKDE4.kdeui import KApplication as QApplication
     from PyKDE4.kdeui import KMainWindow as QMainWindow
+    from PyKDE4.solid import Solid
     from PyKDE4.nepomuk import Nepomuk
     from PyKDE4.kdecore import (KCmdLineArgs, KAboutData, ki18n, KUrl)
     aboutData = KAboutData(__doc__, "", ki18n(__doc__), __version__,
@@ -87,6 +99,7 @@ except ImportError:
 
 
 # constants
+HOME = path.abspath(path.expanduser("~"))
 
 
 # root check
@@ -98,6 +111,54 @@ else:
 
 print(('#' * 80))
 print((''.join((__doc__, ',v.', __version__, __license__, ' by ', __author__))))
+
+
+###############################################################################
+
+
+class TabBar(QTabBar):
+    ' custom tab bar '
+    def __init__(self, parent):
+        ' init class custom tab bar '
+        QTabBar.__init__(self, parent)
+        self._editor = QLineEdit(self)
+        self._editor.setToolTip(' Type a Tab Name ')
+        self._editor.setWindowFlags(Qt.Popup)
+        self._editor.setFocusProxy(self)
+        self._editor.editingFinished.connect(self.handleEditingFinished)
+        self._editor.installEventFilter(self)
+
+    def eventFilter(self, widget, event):
+        ' filter mouse, esc key,  events '
+        if ((event.type() == QEvent.MouseButtonPress and
+             not self._editor.geometry().contains(event.globalPos())) or
+            (event.type() == QEvent.KeyPress and
+             event.key() == Qt.Key_Escape)):
+            self._editor.hide()
+            return True
+        return QTabBar.eventFilter(self, widget, event)
+
+    def mouseDoubleClickEvent(self, event):
+        ' handle double click '
+        index = self.tabAt(event.pos())
+        if index >= 0:
+            self.editTab(index)
+
+    def editTab(self, index):
+        ' handle the editor '
+        rect = self.tabRect(index)
+        self._editor.setFixedSize(rect.size())
+        self._editor.move(self.parent().mapToGlobal(rect.topLeft()))
+        self._editor.setText(self.tabText(index))
+        if not self._editor.isVisible():
+            self._editor.show()
+
+    def handleEditingFinished(self):
+        ' set text when editing has finished '
+        index = self.currentIndex()
+        if index >= 0:
+            self._editor.hide()
+            self.setTabText(index, self._editor.text())
 
 
 ###############################################################################
@@ -142,9 +203,11 @@ class MyMainWindow(QMainWindow):
         self.mainwidget.setTabsClosable(True)
         self.mainwidget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.mainwidget.tabCloseRequested.connect(lambda:
-            self.mainwidget.setTabPosition(1)
-            if self.mainwidget.tabPosition() == 0
-            else self.mainwidget.setTabPosition(0))
+            self.mainwidget.setTabPosition(randint(0, 3)))
+            # if self.mainwidget.tabPosition() == 0
+            # else self.mainwidget.setTabPosition(0))
+        self.mainwidget.setStyleSheet('QTabBar{color:white;font-weight:bold;}')
+        self.mainwidget.setTabBar(TabBar(self))
         self.setCentralWidget(self.mainwidget)
         self.dock1 = QDockWidget()
         self.dock2 = QDockWidget()
@@ -157,8 +220,8 @@ class MyMainWindow(QMainWindow):
             a.setStyleSheet(' QDockWidget::title{text-align:center;}')
             a.setFeatures(QDockWidget.DockWidgetFloatable |
                           QDockWidget.DockWidgetMovable)
-            self.mainwidget.addTab(a, QIcon.fromTheme("face-cool"),
-                                   str(a.windowTitle()).strip().lower())
+            self.mainwidget.addTab(a, QIcon.fromTheme("face-smile"),
+                                   'Double Click Me')
 
         # Paleta de colores para pintar transparente
         self.palette().setBrush(QPalette.Base, Qt.transparent)
@@ -182,9 +245,11 @@ class MyMainWindow(QMainWindow):
         qamin = QAction(QIcon.fromTheme("go-down"), 'Minimize', self)
         qamin.triggered.connect(lambda: self.showMinimized())
         qamax = QAction(QIcon.fromTheme("go-up"), 'Maximize', self)
-        qanor = QAction(QIcon.fromTheme("go-up"), 'AutoCenter AutoResize', self)
+        qanor = QAction(QIcon.fromTheme("view-fullscreen"),
+                                        'AutoCenter AutoResize', self)
         qanor.triggered.connect(self.center)
-        qatim = QAction(QIcon.fromTheme("go-up"), 'View Date and Time', self)
+        qatim = QAction(QIcon.fromTheme("mail-signed-verified"),
+                                        'View Date and Time', self)
         qatim.triggered.connect(self.timedate)
         qabug = QAction(QIcon.fromTheme("help-about"), 'Report a Problem', self)
         qabug.triggered.connect(lambda: qabug.setDisabled(True) if not call(
@@ -205,7 +270,8 @@ class MyMainWindow(QMainWindow):
             __doc__, ''.join((__doc__, linesep, 'version ', __version__, ', (',
             __license__, '), by ', __author__, ', ( ', __email__, ' )', linesep
             ))))
-        qafnt = QAction(QIcon.fromTheme("help-about"), 'Set GUI Font', self)
+        qafnt = QAction(QIcon.fromTheme("tools-check-spelling"),
+                                        'Set GUI Font', self)
         if KDE:
             font = QFont()
             qafnt.triggered.connect(lambda:
@@ -229,7 +295,7 @@ class MyMainWindow(QMainWindow):
             QApplication.desktop().winId()).save(QFileDialog.getSaveFileName(
             self.mainwidget, " Save Screenshot As ...", path.expanduser("~"),
             ';;(*.png) PNG', 'png')))
-        qatb = QAction(QIcon.fromTheme("help-browser"), 'Toggle ToolBar', self)
+        qatb = QAction(QIcon.fromTheme("go-top"), 'Toggle ToolBar', self)
         qatb.triggered.connect(lambda: self.toolbar.hide()
                 if self.toolbar.isVisible() is True else self.toolbar.show())
         qati = QAction(QIcon.fromTheme("help-browser"),
@@ -238,13 +304,13 @@ class MyMainWindow(QMainWindow):
             self.toolbar.setIconSize(self.toolbar.iconSize() * 4)
             if self.toolbar.iconSize().width() * 4 == 24
             else self.toolbar.setIconSize(self.toolbar.iconSize() / 4))
-        qasb = QAction(QIcon.fromTheme("help-browser"), 'Toggle Tabs Bar', self)
+        qasb = QAction(QIcon.fromTheme("zoom-in"), 'Toggle Tabs Bar', self)
         qasb.triggered.connect(lambda: self.mainwidget.tabBar().hide()
                                if self.mainwidget.tabBar().isVisible() is True
                                else self.mainwidget.tabBar().show())
         qadoc = QAction(QIcon.fromTheme("help-browser"), 'On-line Docs', self)
         qadoc.triggered.connect(lambda: open_new_tab(__url__))
-        qapy = QAction(QIcon.fromTheme("help-browser"), 'About Python', self)
+        qapy = QAction(QIcon.fromTheme("help-about"), 'About Python', self)
         qapy.triggered.connect(lambda: open_new_tab('http://python.org/about'))
         qali = QAction(QIcon.fromTheme("help-browser"), 'Read Licence', self)
         qali.triggered.connect(lambda: open_new_tab(__full_licence__))
@@ -308,6 +374,30 @@ class MyMainWindow(QMainWindow):
                 except:
                     pass
 
+        def must_glow(widget_list):
+            ' apply an glow effect to the widget '
+            for glow, each_widget in enumerate(widget_list):
+                try:
+                    if each_widget.graphicsEffect() is None:
+                        glow = QGraphicsDropShadowEffect(self)
+                        glow.setOffset(0)
+                        glow.setBlurRadius(99)
+                        glow.setColor(QColor(99, 255, 255))
+                        each_widget.setGraphicsEffect(glow)
+                        # glow.setEnabled(False)
+                        try:
+                            each_widget.clicked.connect(lambda:
+                            each_widget.graphicsEffect().setEnabled(True)
+                            if each_widget.graphicsEffect().isEnabled() is False
+                            else each_widget.graphicsEffect().setEnabled(False))
+                        except:
+                            each_widget.sliderPressed.connect(lambda:
+                            each_widget.graphicsEffect().setEnabled(True)
+                            if each_widget.graphicsEffect().isEnabled() is False
+                            else each_widget.graphicsEffect().setEnabled(False))
+                except:
+                    pass
+
         #######################################################################
 
         self.group1 = QGroupBox()
@@ -361,6 +451,7 @@ class MyMainWindow(QMainWindow):
                            self.nwfl, self.smll, self.lrgf, self.case))
         must_autofillbackground((self.plai, self.nocr, self.ridt, self.nocm,
                                  self.nwfl, self.smll, self.lrgf, self.case))
+        must_glow((self.plai, self.nocr, self.ridt, self.nocm, self.nwfl, ))
 
     def run(self):
         ' run forest run '
@@ -446,6 +537,7 @@ class MyMainWindow(QMainWindow):
 
     def center(self):
         ' Center and resize the window '
+        self.showNormal()
         self.resize(QDesktopWidget().screenGeometry().width() // 1.25,
                     QDesktopWidget().screenGeometry().height() // 1.25)
         qr = self.frameGeometry()
@@ -454,6 +546,8 @@ class MyMainWindow(QMainWindow):
 
     def nepomuk_set(self, file_tag=None, __tag='', _label='', _description=''):
         ' Quick and Easy Nepomuk Taggify for Files '
+        print((''' INFO: Semantic Desktop Experience is Tagging Files :
+              {}, {}, {}, {})'''.format(file_tag, __tag, _label, _description)))
         if Nepomuk.ResourceManager.instance().init() is 0:
             fle = Nepomuk.Resource(KUrl(QFileInfo(file_tag).absoluteFilePath()))
             _tag = Nepomuk.Tag(__tag)
@@ -468,6 +562,8 @@ class MyMainWindow(QMainWindow):
 
     def nepomuk_get(self, query_to_search):
         ' Quick and Easy Nepomuk Query for Files '
+        print((''' INFO: Semantic Desktop Experience is Quering Files :
+              {} '''.format(query_to_search)))
         results = []
         nepo = Nepomuk.Query.QueryServiceClient()
         nepo.desktopQuery("hasTag:{}".format(query_to_search))
@@ -527,9 +623,11 @@ def main():
     # define our App
     try:
         app = QApplication(sys.argv)
+        app.setApplicationName(__doc__)
         app.setOrganizationName(__author__)
         app.setOrganizationDomain(__author__)
-        app.setApplicationName(__doc__)
+        app.setStyle('Plastique')
+        app.setStyle('Oxygen')
     except TypeError:
         aboutData = KAboutData(__doc__, '', ki18n(__doc__), __version__,
             ki18n(__doc__), KAboutData.License_GPL, ki18n(__author__),
@@ -554,3 +652,4 @@ def main():
 if __name__ == '__main__':
     ' Do NOT add anything here!, use main() function instead. '
     main()
+    
