@@ -82,6 +82,7 @@ try:
     from PyKDE4.kdeui import KMainWindow as QMainWindow
     from PyKDE4.solid import Solid
     from PyKDE4.nepomuk import Nepomuk
+    from PyKDE4.kio import KIO
     from PyKDE4.kdecore import (KCmdLineArgs, KAboutData, ki18n, KUrl)
     aboutData = KAboutData(__doc__, "", ki18n(__doc__), __version__,
         ki18n(__doc__), KAboutData.License_GPL, ki18n(__author__),
@@ -603,6 +604,16 @@ class MyMainWindow(QMainWindow):
             print(results)
             return results
         nepo.finishedListing.connect(_end)
+
+    def kio_get(self, url_string):
+        ' multi-threaded, multi-protocol, resumable, error-checked download '
+        downloader_thread = KIO.storedGet(KUrl(str(url_string).strip()), )
+
+        def kio_job_data_or_error(job):
+            ' retrieve job data or job error '
+            print((job.data() if not job.error() else job.error()))
+            return job.data() if not job.error() else job.error()
+        downloader_thread.result.connect(kio_job_data_or_error)
 
 
 ###############################################################################
